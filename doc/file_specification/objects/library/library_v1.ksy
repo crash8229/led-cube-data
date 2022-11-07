@@ -9,9 +9,6 @@ doc: Version 1 of the library specification
 seq:
   - id: secondary_header
     type: secondary_header
-  - id: crc
-    type: u4
-    doc: CRC of the secondary header
   - id: animations
     type: animation
     repeat: expr

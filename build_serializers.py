@@ -20,6 +20,7 @@ class Types:
         "u": (Template("construct.BytesInteger(${num})"), False),
         "b": (Template("construct.BitsInteger(${num})"), True),
         "str": (Template("construct.PaddedString(${size}, 'utf8')"), False),
+        "None": (Template("construct.Bytes(${size})"), False)
     }
 
     def __init__(self) -> None:
@@ -35,7 +36,7 @@ class Types:
 
     def get_type(
         self,
-        type_str: Union[str, dict],
+        type_str: Union[str, dict, None],
         meta_id: str,
         seq_ids: Iterable[str],
         size: int = 0,
@@ -72,6 +73,11 @@ class Types:
                 key = type_str[0]
                 num = type_str[1:]
                 return self.__types[key][0].substitute(num=num), self.__types[key][1]
+        elif type_str is None:
+            return (
+                self.__types["None"][0].substitute(size=size),
+                self.__types["None"][1],
+            )
 
         raise TypeError(f"Unknown type entry: {type_str}")
 
@@ -210,7 +216,7 @@ class Serializer:
         bit_type = False
         for field in seq:
             field_type = types.get_type(
-                field["type"], meta_id, seq_ids, field["size"] if "size" in field else 0
+                field["type"] if "type" in field else None, meta_id, seq_ids, field["size"] if "size" in field else 0
             )
             bit_type |= field_type[1]
             struct_field = field_type[0]

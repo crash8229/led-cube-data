@@ -1,18 +1,17 @@
 # This is a generated file! Please edit source .ksy file and use kaitai-struct-compiler to rebuild
 
-from pkg_resources import parse_version
 import kaitaistruct
 from kaitaistruct import KaitaiStruct, KaitaiStream, BytesIO
 
 
-if parse_version(kaitaistruct.__version__) < parse_version('0.9'):
+if getattr(kaitaistruct, 'API_VERSION', (0, 9)) < (0, 9):
     raise Exception("Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have %s" % (kaitaistruct.__version__))
 
 from led_cube_data.parser import primary_header
 from led_cube_data.parser import library
-from led_cube_data.parser import frame
-from led_cube_data.parser import cube_file
 from led_cube_data.parser import animation
+from led_cube_data.parser import cube_file
+from led_cube_data.parser import frame
 class Parser(KaitaiStruct):
     """LED Cube Master Parser
     This parser looks at the primary header to determine how to parse the data
@@ -32,7 +31,7 @@ class Parser(KaitaiStruct):
     def object(self):
         """This is where the data is actually parsed."""
         if hasattr(self, '_m_object'):
-            return self._m_object if hasattr(self, '_m_object') else None
+            return self._m_object
 
         _pos = self._io.pos()
         self._io.seek(0)
@@ -46,6 +45,6 @@ class Parser(KaitaiStruct):
         elif _on == primary_header.PrimaryHeader.Type.file:
             self._m_object = cube_file.CubeFile(self._io)
         self._io.seek(_pos)
-        return self._m_object if hasattr(self, '_m_object') else None
+        return getattr(self, '_m_object', None)
 
 

@@ -1,4 +1,4 @@
-from binascii import crc32
+from hashlib import sha256
 from copy import deepcopy
 from typing import Sequence, Dict, Any
 from construct import SizeofError
@@ -109,9 +109,9 @@ class AnimationV1(Animation):
         data["animation"]["frames"] = [f.populated_data for f in frames]
 
         # Generate CRC
-        data["crc"] = crc32(
+        data["sha256"] = sha256(
             serializer.animation_v1_animation_v1.build(data["animation"])
-        )
+        ).digest()
 
         self.__populated_data = data
 
@@ -191,15 +191,15 @@ class LibraryV1(Library):
         data_length += sum((len(ani) for ani in animations))
         data["library"]["secondary_header"]["data_length"] = data_length
 
-        # Generate CRC
-        data["library"]["crc"] = crc32(
-            serializer.library_v1_secondary_header.build(
-                data["library"]["secondary_header"]
-            )
-        )
-
         # Create frame data
         data["library"]["animations"] = [ani.populated_data for ani in animations]
+
+        # Generate CRC
+        data["sha256"] = sha256(
+            serializer.library_v1_library_v1.build(
+                data["library"]
+            )
+        ).digest()
 
         self.__populated_data = data
 

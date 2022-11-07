@@ -16,3 +16,6 @@ seq:
       cases:
         1: library_v1
     doc: The structure is determined by the version
+  - id: sha256
+    size: 32
+    doc: SHA256 of the contents in library

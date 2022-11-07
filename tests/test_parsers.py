@@ -91,8 +91,12 @@ def test_animation_v1():
 
     ################################################################################################
 
-    # CRC
-    check.equal(p.object.crc, 0x39099D6E, "crc was not 0x39099D6E")
+    # SHA256
+    check.equal(
+        p.object.sha256,
+        bytes.fromhex("04CA 25AA B4F3 284D EB20 2589 A68E 4202 99D9 7EF3 A94E 872B B3C1 0D5A 00FB 3650"),
+        "sha256 was not: 04CA 25AA B4F3 284D EB20 2589 A68E 4202 99D9 7EF3 A94E 872B B3C1 0D5A 00FB 3650"
+    )
 
 
 def test_library_v1():
@@ -113,9 +117,6 @@ def test_library_v1():
     check.equal(p.object.library.secondary_header.time, 0x3E8, "time was not 0x3E8")
     check.equal(p.object.library.secondary_header.animation_count, 2, "animation_count was not 2")
     check.equal(p.object.library.secondary_header.data_length, 0x1B6, "data_length was not 0x1B6")
-
-    # Library CRC
-    check.equal(p.object.library.crc, 0x27083e4c, "crc was not 0x27083e4c")
 
     ################################################################################################
 
@@ -178,8 +179,12 @@ def test_library_v1():
 
     ##############################################
 
-    # Animation 0 CRC
-    check.equal(p.object.library.animations[0].crc, 0x32AFA7F9, "animation 0 crc was not 0x32AFA7F9")
+    # Animation 0 SHA256
+    check.equal(
+        p.object.library.animations[0].sha256,
+        bytes.fromhex("2362 75D0 3729 2CAC 86E6 BFD2 E2BA 08AC 944F DF3A 5F72 D2D5 E3F7 1512 9EDB 0930"),
+        "animation 0 sha256 was not: 2362 75D0 3729 2CAC 86E6 BFD2 E2BA 08AC 944F DF3A 5F72 D2D5 E3F7 1512 9EDB 0930"
+    )
 
     ################################################################################################
 
@@ -242,10 +247,21 @@ def test_library_v1():
 
     ##############################################
 
-    # Animation 1 CRC
-    check.equal(p.object.library.animations[1].crc, 0x39099D6E, "animation 1 crc was not 0x39099D6E")
+    # Animation 1 SHA256
+    check.equal(
+        p.object.library.animations[1].sha256,
+        bytes.fromhex("04CA 25AA B4F3 284D EB20 2589 A68E 4202 99D9 7EF3 A94E 872B B3C1 0D5A 00FB 3650"),
+        "sha256 was not: 04CA 25AA B4F3 284D EB20 2589 A68E 4202 99D9 7EF3 A94E 872B B3C1 0D5A 00FB 3650"
+    )
 
     ################################################################################################
+
+    # Library SHA256
+    check.equal(
+        p.object.sha256,
+        bytes.fromhex("4583 6DCB 46CF 226D 2100 B543 C5C9 9172 671C BECC A892 F214 26AC 1407 33D3 8535"),
+        "sha256 was not: 4583 6DCB 46CF 226D 2100 B543 C5C9 9172 671C BECC A892 F214 26AC 1407 33D3 8535"
+    )
 
 
 def test_cube_file_v1():
@@ -273,9 +289,6 @@ def test_cube_file_v1():
     check.equal(p.object.file.library.secondary_header.time, 0x3E8, "time was not 0x3E8")
     check.equal(p.object.file.library.secondary_header.animation_count, 2, "animation_count was not 2")
     check.equal(p.object.file.library.secondary_header.data_length, 0x1B6, "data_length was not 0x1B2")
-
-    # Library CRC
-    check.equal(p.object.file.library.crc, 0x27083e4c, "crc was not 0x27083e4c")
 
     ##############################################
 
@@ -338,8 +351,12 @@ def test_cube_file_v1():
 
     #####################
 
-    # Animation 0 CRC
-    check.equal(p.object.file.library.animations[0].crc, 0x32AFA7F9, "animation 0 crc was not 0x32AFA7F9")
+    # Animation 0 SHA256
+    check.equal(
+        p.object.file.library.animations[0].sha256,
+        bytes.fromhex("2362 75D0 3729 2CAC 86E6 BFD2 E2BA 08AC 944F DF3A 5F72 D2D5 E3F7 1512 9EDB 0930"),
+        "animation 0 sha256 was not: 2362 75D0 3729 2CAC 86E6 BFD2 E2BA 08AC 944F DF3A 5F72 D2D5 E3F7 1512 9EDB 0930"
+    )
 
     ##############################################
 
@@ -402,7 +419,18 @@ def test_cube_file_v1():
 
     #####################
 
-    # Animation 1 CRC
-    check.equal(p.object.file.library.animations[1].crc, 0x39099D6E, "animation 1 crc was not 0x39099D6E")
+    # Animation 1 SHA256
+    check.equal(
+        p.object.file.library.animations[1].sha256,
+        bytes.fromhex("04CA 25AA B4F3 284D EB20 2589 A68E 4202 99D9 7EF3 A94E 872B B3C1 0D5A 00FB 3650"),
+        "sha256 was not: 04CA 25AA B4F3 284D EB20 2589 A68E 4202 99D9 7EF3 A94E 872B B3C1 0D5A 00FB 3650"
+    )
 
     ################################################################################################
+
+    # Library SHA256
+    check.equal(
+        p.object.file.sha256,
+        bytes.fromhex("4583 6DCB 46CF 226D 2100 B543 C5C9 9172 671C BECC A892 F214 26AC 1407 33D3 8535"),
+        "sha256 was not: 4583 6DCB 46CF 226D 2100 B543 C5C9 9172 671C BECC A892 F214 26AC 1407 33D3 8535"
+    )

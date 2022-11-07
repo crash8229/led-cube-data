@@ -44,7 +44,7 @@ animation_animation = construct.Struct(
     / construct.Switch(
         construct.this.primary_header.version, {1: animation_v1_animation_v1}
     ),
-    "crc" / construct.BytesInteger(4),
+    "sha256" / construct.Bytes(32),
 )
 
 library_v1_secondary_header = construct.Struct(
@@ -56,7 +56,6 @@ library_v1_secondary_header = construct.Struct(
 
 library_v1_library_v1 = construct.Struct(
     "secondary_header" / library_v1_secondary_header,
-    "crc" / construct.BytesInteger(4),
     "animations"
     / construct.Array(
         construct.this.secondary_header.animation_count, animation_animation
@@ -69,6 +68,7 @@ library_library = construct.Struct(
     / construct.Switch(
         construct.this.primary_header.version, {1: library_v1_library_v1}
     ),
+    "sha256" / construct.Bytes(32),
 )
 
 cube_file_cube_file = construct.Struct(
