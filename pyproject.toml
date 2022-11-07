@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "led-cube-data"
-version = "0.1.0"
+version = "1.0.0"
 description = "File specification used in my LED cube projects."
 authors = ["crash8229 <mu304007@gmail.com>"]
 license = "GPL-3.0-only"
