@@ -9,8 +9,8 @@ if getattr(kaitaistruct, 'API_VERSION', (0, 9)) < (0, 9):
 
 from led_cube_data.parser import primary_header
 from led_cube_data.parser import library
-from led_cube_data.parser import animation
 from led_cube_data.parser import cube_file
+from led_cube_data.parser import animation
 from led_cube_data.parser import frame
 class Parser(KaitaiStruct):
     """LED Cube Master Parser

@@ -34,8 +34,7 @@ class AnimationV1(KaitaiStruct):
         def _read(self):
             self.name = (self._io.read_bytes(32)).decode(u"UTF-8")
             self.time = self._io.read_u8be()
-            self.tlc_count = self._io.read_u1()
-            self.frame_count = self._io.read_u4be()
+            self.frame_count = self._io.read_u2be()
             self.data_length = self._io.read_u4be()
 
 

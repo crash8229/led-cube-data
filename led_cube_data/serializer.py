@@ -27,8 +27,7 @@ frame_frame = construct.Struct(
 animation_v1_secondary_header = construct.Struct(
     "name" / construct.PaddedString(32, "utf8"),
     "time" / construct.BytesInteger(8),
-    "tlc_count" / construct.BytesInteger(1),
-    "frame_count" / construct.BytesInteger(4),
+    "frame_count" / construct.BytesInteger(2),
     "data_length" / construct.BytesInteger(4),
 )
 
@@ -40,17 +39,21 @@ animation_v1_animation_v1 = construct.Struct(
 
 animation_animation = construct.Struct(
     "primary_header" / primary_header_primary_header,
+    "sha256" / construct.Bytes(32),
     "animation"
     / construct.Switch(
         construct.this.primary_header.version, {1: animation_v1_animation_v1}
     ),
-    "sha256" / construct.Bytes(32),
 )
 
 library_v1_secondary_header = construct.Struct(
     "name" / construct.PaddedString(32, "utf8"),
     "time" / construct.BytesInteger(8),
-    "animation_count" / construct.BytesInteger(4),
+    "x_size" / construct.BytesInteger(1),
+    "y_size" / construct.BytesInteger(1),
+    "z_size" / construct.BytesInteger(1),
+    "tlc_count" / construct.BytesInteger(1),
+    "animation_count" / construct.BytesInteger(1),
     "data_length" / construct.BytesInteger(8),
 )
 
@@ -64,11 +67,11 @@ library_v1_library_v1 = construct.Struct(
 
 library_library = construct.Struct(
     "primary_header" / primary_header_primary_header,
+    "sha256" / construct.Bytes(32),
     "library"
     / construct.Switch(
         construct.this.primary_header.version, {1: library_v1_library_v1}
     ),
-    "sha256" / construct.Bytes(32),
 )
 
 cube_file_cube_file = construct.Struct(

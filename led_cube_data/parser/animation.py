@@ -19,9 +19,9 @@ class Animation(KaitaiStruct):
 
     def _read(self):
         self.primary_header = primary_header.PrimaryHeader(self._io)
+        self.sha256 = self._io.read_bytes(32)
         _on = self.primary_header.version
         if _on == 1:
             self.animation = animation_v1.AnimationV1(self._io)
-        self.sha256 = self._io.read_bytes(32)
 
 

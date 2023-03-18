@@ -34,7 +34,11 @@ class LibraryV1(KaitaiStruct):
         def _read(self):
             self.name = (self._io.read_bytes(32)).decode(u"UTF-8")
             self.time = self._io.read_u8be()
-            self.animation_count = self._io.read_u4be()
+            self.x_size = self._io.read_u1()
+            self.y_size = self._io.read_u1()
+            self.z_size = self._io.read_u1()
+            self.tlc_count = self._io.read_u1()
+            self.animation_count = self._io.read_u1()
             self.data_length = self._io.read_u8be()
 
 

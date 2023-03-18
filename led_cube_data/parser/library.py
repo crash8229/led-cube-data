@@ -19,9 +19,9 @@ class Library(KaitaiStruct):
 
     def _read(self):
         self.primary_header = primary_header.PrimaryHeader(self._io)
+        self.sha256 = self._io.read_bytes(32)
         _on = self.primary_header.version
         if _on == 1:
             self.library = library_v1.LibraryV1(self._io)
-        self.sha256 = self._io.read_bytes(32)
 
 
