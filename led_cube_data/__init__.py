@@ -1,5 +1,8 @@
 from led_cube_data.parser.parser import Parser
 from led_cube_data import serializer
 
-__version__ = '0.1.0'
+import importlib.metadata
+
+
+__version__ = importlib.metadata.version("led_cube_data")
 __all__ = ["Parser", "serializer"]
