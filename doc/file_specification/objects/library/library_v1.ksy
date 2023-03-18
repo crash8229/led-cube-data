@@ -26,8 +26,20 @@ types:
       - id: time
         type: u8
         doc: UNIX timestamp of file creation
+      - id: x_size
+        type: u1
+        doc: Number of LEDs along the X axis
+      - id: y_size
+        type: u1
+        doc: Number of LEDs along the Y axis
+      - id: z_size
+        type: u1
+        doc: Number of LEDs along the Z axis
+      - id: tlc_count
+        type: u1
+        doc: Number of TLC 5940 chained together
       - id: animation_count
-        type: u4
+        type: u1
         doc: Number of animations in the library
       - id: data_length
         type: u8

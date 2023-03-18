@@ -26,11 +26,8 @@ types:
       - id: time
         type: u8
         doc: UNIX timestamp of file creation
-      - id: tlc_count
-        type: u1
-        doc: Number of TLC 5940 chained together
       - id: frame_count
-        type: u4
+        type: u2
         doc: Number of frames in the animation
       - id: data_length
         type: u4
