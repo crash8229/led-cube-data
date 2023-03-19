@@ -28,7 +28,9 @@ class FrameV1(Frame):
     def populate(self, duration: int, tlc_states: Sequence[Sequence[int]]) -> None:
         data = self.template()
         data["frame"]["secondary_header"]["duration"] = duration
-        data["frame"]["secondary_header"]["data_length"] = len(tlc_states) * 24
+        data["frame"]["secondary_header"]["data_length"] = (
+            len(tlc_states) * serializer.frame_v1_tlc.sizeof()
+        )
         data["frame"]["tlc_states"] = [{"state": s} for s in tlc_states]
 
         self.__populated_data = data
@@ -75,12 +77,10 @@ class AnimationV1(Animation):
         self,
         name: str,
         timestamp: int,
-        tlc_count: int,
-        frame_count: int,
         frames: Sequence[Frame],
     ) -> None:
         self.__populated_data: Dict[str, Any] = dict()
-        self.populate(name, timestamp, tlc_count, frame_count, frames)
+        self.populate(name, timestamp, frames)
 
     @property
     def populated_data(self) -> Dict[str, Any]:
@@ -90,25 +90,22 @@ class AnimationV1(Animation):
         self,
         name: str,
         timestamp: int,
-        tlc_count: int,
-        frame_count: int,
         frames: Sequence[Frame],
     ) -> None:
         data = AnimationV1.template()
         data["animation"]["secondary_header"]["name"] = name
         data["animation"]["secondary_header"]["time"] = timestamp
-        data["animation"]["secondary_header"]["tlc_count"] = tlc_count
-        data["animation"]["secondary_header"]["frame_count"] = frame_count
+        data["animation"]["secondary_header"]["frame_count"] = len(frames)
 
         # Calculate data length
-        data_length = 4  # 4 bytes for CRC
-        data_length += sum((len(fr) for fr in frames))
-        data["animation"]["secondary_header"]["data_length"] = data_length
+        data["animation"]["secondary_header"]["data_length"] = sum(
+            (len(fr) for fr in frames)
+        )
 
         # Create frame data
         data["animation"]["frames"] = [f.populated_data for f in frames]
 
-        # Generate CRC
+        # Generate Checksum
         data["sha256"] = sha256(
             serializer.animation_v1_animation_v1.build(data["animation"])
         ).digest()
@@ -125,6 +122,7 @@ class AnimationV1(Animation):
         try:
             return (
                 serializer.primary_header_primary_header.sizeof()
+                + len(self.__populated_data["sha256"])
                 + serializer.animation_v1_secondary_header.sizeof()
                 + self.__populated_data["animation"]["secondary_header"]["data_length"]
             )
@@ -135,17 +133,16 @@ class AnimationV1(Animation):
     def template() -> Dict[str, Any]:
         return {
             "primary_header": {"type": 1, "version": 1},
+            "sha256": None,
             "animation": {
                 "secondary_header": {
                     "name": None,
                     "time": None,
-                    "tlc_count": None,
                     "frame_count": None,
                     "data_length": None,
                 },
                 "frames": None,
             },
-            "crc": None,
         }
 
 
@@ -164,11 +161,14 @@ class LibraryV1(Library):
         self,
         name: str,
         timestamp: int,
-        animation_count: int,
+        x_size: int,
+        y_size: int,
+        z_size: int,
+        tlc_count: int,
         animations: Sequence[Animation],
     ) -> None:
         self.__populated_data: Dict[str, Any] = dict()
-        self.populate(name, timestamp, animation_count, animations)
+        self.populate(name, timestamp, x_size, y_size, z_size, tlc_count, animations)
 
     @property
     def populated_data(self) -> Dict[str, Any]:
@@ -178,27 +178,32 @@ class LibraryV1(Library):
         self,
         name: str,
         timestamp: int,
-        animation_count: int,
+        x_size: int,
+        y_size: int,
+        z_size: int,
+        tlc_count: int,
         animations: Sequence[Animation],
     ) -> None:
         data = LibraryV1.template()
         data["library"]["secondary_header"]["name"] = name
         data["library"]["secondary_header"]["time"] = timestamp
-        data["library"]["secondary_header"]["animation_count"] = animation_count
+        data["library"]["secondary_header"]["x_size"] = x_size
+        data["library"]["secondary_header"]["y_size"] = y_size
+        data["library"]["secondary_header"]["z_size"] = z_size
+        data["library"]["secondary_header"]["tlc_count"] = tlc_count
+        data["library"]["secondary_header"]["animation_count"] = len(animations)
 
         # Calculate data length
-        data_length = 4  # 4 bytes for CRC
-        data_length += sum((len(ani) for ani in animations))
-        data["library"]["secondary_header"]["data_length"] = data_length
+        data["library"]["secondary_header"]["data_length"] = sum(
+            (len(ani) for ani in animations)
+        )
 
         # Create frame data
         data["library"]["animations"] = [ani.populated_data for ani in animations]
 
         # Generate CRC
         data["sha256"] = sha256(
-            serializer.library_v1_library_v1.build(
-                data["library"]
-            )
+            serializer.library_v1_library_v1.build(data["library"])
         ).digest()
 
         self.__populated_data = data
@@ -213,6 +218,7 @@ class LibraryV1(Library):
         try:
             return (
                 serializer.primary_header_primary_header.sizeof()
+                + len(self.__populated_data["sha256"])
                 + serializer.library_v1_secondary_header.sizeof()
                 + self.__populated_data["library"]["secondary_header"]["data_length"]
             )
@@ -223,14 +229,18 @@ class LibraryV1(Library):
     def template() -> Dict[str, Any]:
         return {
             "primary_header": {"type": 2, "version": 1},
+            "sha256": None,
             "library": {
                 "secondary_header": {
                     "name": None,
                     "time": None,
+                    "x_size": None,
+                    "y_size": None,
+                    "z_size": None,
+                    "tlc_count": None,
                     "animation_count": None,
                     "data_length": None,
                 },
-                "crc": None,
                 "animations": None,
             },
         }
@@ -271,8 +281,11 @@ class CubeFileV1(Library):
         try:
             return (
                 serializer.primary_header_primary_header.sizeof() * 2
+                + len(self.__populated_data["file"]["sha256"])
                 + serializer.library_v1_secondary_header.sizeof()
-                + self.__populated_data["file"]["secondary_header"]["data_length"]
+                + self.__populated_data["file"]["library"]["secondary_header"][
+                    "data_length"
+                ]
             )
         except (SizeofError, KeyError):
             raise ValueError("Data was not populated!")
