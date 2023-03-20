@@ -20,12 +20,13 @@ class Types:
         "u": (Template("construct.BytesInteger(${num})"), False),
         "b": (Template("construct.BitsInteger(${num})"), True),
         "str": (Template("construct.PaddedString(${size}, 'utf8')"), False),
-        "None": (Template("construct.Bytes(${size})"), False)
+        "None": (Template("construct.Bytes(${size})"), False),
     }
 
     def __init__(self) -> None:
         self.__custom_types: Dict[str, str] = dict()
         self.__import_stack: List[str] = list()
+        self.__enum_types: Dict[str, Template] = dict()
 
     @property
     def custom_types(self) -> Dict[str, str]:
@@ -36,15 +37,18 @@ class Types:
 
     def get_type(
         self,
-        type_str: Union[str, dict, None],
+        field: dict,
         meta_id: str,
         seq_ids: Iterable[str],
-        size: int = 0,
     ) -> Tuple[str, bool]:
+        type_str: Union[dict, None] = field["type"] if "type" in field else None
+        size: int = field["size"] if "size" in field else 0
+        return_values: Optional[Tuple[str, bool]] = None
+
         if isinstance(type_str, dict):
             if "switch-on" in type_str:
                 cases = self._process_switch_cases(type_str["cases"], seq_ids, meta_id)
-                return (
+                return_values = (
                     SWITCH_STR.substitute(
                         switch=self._process_expr_str(type_str["switch-on"], seq_ids),
                         cases=cases[0],
@@ -53,33 +57,50 @@ class Types:
                 )
 
         elif isinstance(type_str, str):
-
             # Is the type from the imports
             if type_str in self.__import_stack:
-                return f"{type_str}_{type_str}", False
+                return_values = (f"{type_str}_{type_str}", False)
 
             # Is the type in the current ksy scope
-            if f"{meta_id}_{type_str}" in self.__custom_types:
-                return f"{meta_id}_{type_str}", False
+            elif f"{meta_id}_{type_str}" in self.__custom_types:
+                return_values = (f"{meta_id}_{type_str}", False)
 
             # Is the type a base type
-            if type_str in self.__types:
+            elif type_str in self.__types:
                 if type_str == "str":
-                    return (
+                    return_values = (
                         self.__types[type_str][0].substitute(size=size),
                         self.__types[type_str][1],
                     )
             elif type_str[0] in self.__types:
                 key = type_str[0]
                 num = type_str[1:]
-                return self.__types[key][0].substitute(num=num), self.__types[key][1]
+                return_values = (
+                    self.__types[key][0].substitute(num=num),
+                    self.__types[key][1],
+                )
+
+            if "enum" in field and return_values is not None:
+                enum_type = None
+                if f'{meta_id}_{field["enum"]}' in self.__enum_types:
+                    enum_type = self.__enum_types[f'{meta_id}_{field["enum"]}']
+                if enum_type is None:
+                    raise TypeError(f"Enum {field['enum']} not defined")
+                return_values = (
+                    enum_type.substitute(type=return_values[0]),
+                    return_values[1],
+                )
+
         elif type_str is None:
-            return (
+            return_values = (
                 self.__types["None"][0].substitute(size=size),
                 self.__types["None"][1],
             )
 
-        raise TypeError(f"Unknown type entry: {type_str}")
+        if return_values is None:
+            raise TypeError(f"Unknown type entry: {type_str}")
+
+        return return_values
 
     def add_custom_type(self, name: str, definition: str) -> None:
         self.__custom_types[name] = definition
@@ -109,9 +130,12 @@ class Types:
             types.add_custom_type(f"{seq_name}_{seq_name}", seq_type)
         self.__import_stack = import_list
 
-    # TODO: Support enums types
-    def build_enums(self, data: dict):
-        pass
+    def build_enums(self, data: Dict[str, Dict[int, str]], meta_id: str):
+        for type_name, type_values in data.items():
+            enum_values = ", ".join((f"{v}={k}" for k, v in type_values.items()))
+            self.__enum_types[f"{meta_id}_{type_name}"] = Template(
+                f"construct.Enum(${{type}}, {enum_values})"
+            )
 
     def _process_switch_cases(
         self, cases: dict, seq_ids: Iterable[str], meta_id: str
@@ -120,7 +144,7 @@ class Types:
         result = "{"
         bit_type = False
         for key, value in cases.items():
-            val = self.get_type(value, meta_id, seq_ids)
+            val = self.get_type({"type": value}, meta_id, seq_ids)
             bit_type |= val[1]
             result += case_str.substitute(key=key, value=val[0])
         return result[:-2] + "}", bit_type
@@ -190,6 +214,8 @@ class Serializer:
             types.build_imports(ksy_dir, yaml_data["meta"]["imports"])
         else:
             types.build_imports(ksy_dir, [])
+        if "enums" in yaml_data:
+            types.build_enums(yaml_data["enums"], yaml_data["meta"]["id"])
         if "types" in yaml_data:
             types.build_types(yaml_data["types"], yaml_data["meta"]["id"])
 
@@ -215,9 +241,7 @@ class Serializer:
         seq_ids: Set[str] = set()
         bit_type = False
         for field in seq:
-            field_type = types.get_type(
-                field["type"] if "type" in field else None, meta_id, seq_ids, field["size"] if "size" in field else 0
-            )
+            field_type = types.get_type(field, meta_id, seq_ids)
             bit_type |= field_type[1]
             struct_field = field_type[0]
 

@@ -1,7 +1,11 @@
 import construct
 
 primary_header_primary_header = construct.Struct(
-    "type" / construct.BytesInteger(1), "version" / construct.BytesInteger(1)
+    "type"
+    / construct.Enum(
+        construct.BytesInteger(1), frame=0, animation=1, library=2, file=3
+    ),
+    "version" / construct.BytesInteger(1),
 )
 
 frame_v1_secondary_header = construct.Struct(

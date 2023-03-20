@@ -54,7 +54,7 @@ class FrameV1(Frame):
     @staticmethod
     def template() -> Dict[str, Any]:
         return {
-            "primary_header": {"type": 0, "version": 1},
+            "primary_header": {"type": "frame", "version": 1},
             "frame": {
                 "secondary_header": {"duration": None, "data_length": None},
                 "tlc_states": None,
@@ -132,7 +132,7 @@ class AnimationV1(Animation):
     @staticmethod
     def template() -> Dict[str, Any]:
         return {
-            "primary_header": {"type": 1, "version": 1},
+            "primary_header": {"type": "animation", "version": 1},
             "sha256": None,
             "animation": {
                 "secondary_header": {
@@ -228,7 +228,7 @@ class LibraryV1(Library):
     @staticmethod
     def template() -> Dict[str, Any]:
         return {
-            "primary_header": {"type": 2, "version": 1},
+            "primary_header": {"type": "library", "version": 1},
             "sha256": None,
             "library": {
                 "secondary_header": {
@@ -293,6 +293,6 @@ class CubeFileV1(Library):
     @staticmethod
     def template() -> Dict[str, Any]:
         return {
-            "primary_header": {"type": 3, "version": 1},
+            "primary_header": {"type": "file", "version": 1},
             "file": None,
         }
