@@ -1,29 +1,48 @@
-from hashlib import sha256
 from copy import deepcopy
+from hashlib import sha256
 from typing import Sequence, Dict, Any
-from construct import SizeofError
+
+from construct import SizeofError, Struct
 
 from led_cube_data import serializer
 
 
-#### Frames ####################################################################
-class Frame:
+class BaseAssembler:
+    def __init__(self, serializer_struct: Struct) -> None:
+        self._populated_data: Dict[str, Any] = dict()
+        self._serializer: Struct = serializer_struct
+
     @property
     def populated_data(self) -> Dict[str, Any]:
-        raise NotImplementedError
+        return deepcopy(self._populated_data)
+
+    def generate(self) -> bytes:
+        try:
+            return self._serializer.build(self._populated_data)
+        except KeyError:
+            raise ValueError("Data was not populated!")
 
     def __len__(self) -> int:
         raise NotImplementedError
 
+    @staticmethod
+    def template() -> Dict[str, Any]:
+        raise NotImplementedError
+
+    def populate(self, *args, **kwargs) -> None:
+        raise NotImplementedError
+
+
+#### Frames ####################################################################
+class Frame(BaseAssembler):  # noqa
+    def __init__(self) -> None:
+        super().__init__(serializer.frame_frame)
+
 
 class FrameV1(Frame):
     def __init__(self, duration: int, tlc_states: Sequence[Sequence[int]]) -> None:
-        self.__populated_data: Dict[str, Any] = dict()
+        super().__init__()
         self.populate(duration, tlc_states)
-
-    @property
-    def populated_data(self) -> Dict[str, Any]:
-        return deepcopy(self.__populated_data)
 
     def populate(self, duration: int, tlc_states: Sequence[Sequence[int]]) -> None:
         data = self.template()
@@ -33,20 +52,14 @@ class FrameV1(Frame):
         )
         data["frame"]["tlc_states"] = [{"state": s} for s in tlc_states]
 
-        self.__populated_data = data
-
-    def generate(self) -> bytes:
-        try:
-            return serializer.frame_frame.build(self.__populated_data)
-        except KeyError:
-            raise ValueError("Data was not populated!")
+        self._populated_data = data
 
     def __len__(self) -> int:
         try:
             return (
                 serializer.primary_header_primary_header.sizeof()
                 + serializer.frame_v1_secondary_header.sizeof()
-                + self.__populated_data["frame"]["secondary_header"]["data_length"]
+                + self._populated_data["frame"]["secondary_header"]["data_length"]
             )
         except (SizeofError, KeyError):
             raise ValueError("Data was not populated!")
@@ -63,13 +76,9 @@ class FrameV1(Frame):
 
 
 #### Animations ################################################################
-class Animation:
-    @property
-    def populated_data(self) -> Dict[str, Any]:
-        raise NotImplementedError
-
-    def __len__(self) -> int:
-        raise NotImplementedError
+class Animation(BaseAssembler):  # noqa
+    def __init__(self) -> None:
+        super().__init__(serializer.animation_animation)
 
 
 class AnimationV1(Animation):
@@ -79,12 +88,8 @@ class AnimationV1(Animation):
         timestamp: int,
         frames: Sequence[Frame],
     ) -> None:
-        self.__populated_data: Dict[str, Any] = dict()
+        super().__init__()
         self.populate(name, timestamp, frames)
-
-    @property
-    def populated_data(self) -> Dict[str, Any]:
-        return deepcopy(self.__populated_data)
 
     def populate(
         self,
@@ -110,21 +115,15 @@ class AnimationV1(Animation):
             serializer.animation_v1_animation_v1.build(data["animation"])
         ).digest()
 
-        self.__populated_data = data
-
-    def generate(self) -> bytes:
-        try:
-            return serializer.animation_animation.build(self.__populated_data)
-        except KeyError:
-            raise ValueError("Data was not populated!")
+        self._populated_data = data
 
     def __len__(self) -> int:
         try:
             return (
                 serializer.primary_header_primary_header.sizeof()
-                + len(self.__populated_data["sha256"])
+                + len(self._populated_data["sha256"])
                 + serializer.animation_v1_secondary_header.sizeof()
-                + self.__populated_data["animation"]["secondary_header"]["data_length"]
+                + self._populated_data["animation"]["secondary_header"]["data_length"]
             )
         except (SizeofError, KeyError):
             raise ValueError("Data was not populated!")
@@ -147,13 +146,9 @@ class AnimationV1(Animation):
 
 
 #### Libraries #################################################################
-class Library:
-    @property
-    def populated_data(self) -> Dict[str, Any]:
-        raise NotImplementedError
-
-    def __len__(self) -> int:
-        raise NotImplementedError
+class Library(BaseAssembler):  # noqa
+    def __init__(self) -> None:
+        super().__init__(serializer.library_library)
 
 
 class LibraryV1(Library):
@@ -167,12 +162,8 @@ class LibraryV1(Library):
         tlc_count: int,
         animations: Sequence[Animation],
     ) -> None:
-        self.__populated_data: Dict[str, Any] = dict()
+        super().__init__()
         self.populate(name, timestamp, x_size, y_size, z_size, tlc_count, animations)
-
-    @property
-    def populated_data(self) -> Dict[str, Any]:
-        return deepcopy(self.__populated_data)
 
     def populate(
         self,
@@ -206,21 +197,15 @@ class LibraryV1(Library):
             serializer.library_v1_library_v1.build(data["library"])
         ).digest()
 
-        self.__populated_data = data
-
-    def generate(self) -> bytes:
-        try:
-            return serializer.library_library.build(self.__populated_data)
-        except KeyError:
-            raise ValueError("Data was not populated!")
+        self._populated_data = data
 
     def __len__(self) -> int:
         try:
             return (
                 serializer.primary_header_primary_header.sizeof()
-                + len(self.__populated_data["sha256"])
+                + len(self._populated_data["sha256"])
                 + serializer.library_v1_secondary_header.sizeof()
-                + self.__populated_data["library"]["secondary_header"]["data_length"]
+                + self._populated_data["library"]["secondary_header"]["data_length"]
             )
         except (SizeofError, KeyError):
             raise ValueError("Data was not populated!")
@@ -247,43 +232,29 @@ class LibraryV1(Library):
 
 
 #### Cube Files ################################################################
-class CubeFile:
-    @property
-    def populated_data(self) -> Dict[str, Any]:
-        raise NotImplementedError
-
-    def __len__(self) -> int:
-        raise NotImplementedError
+class CubeFile(BaseAssembler):  # noqa
+    def __init__(self) -> None:
+        super().__init__(serializer.cube_file_cube_file)
 
 
-class CubeFileV1(Library):
+class CubeFileV1(CubeFile):
     def __init__(self, library: Library) -> None:
-        self.__populated_data: Dict[str, Any] = dict()
+        super().__init__()
         self.populate(library)
-
-    @property
-    def populated_data(self) -> Dict[str, Any]:
-        return deepcopy(self.__populated_data)
 
     def populate(self, library: Library) -> None:
         data = CubeFileV1.template()
         data["file"] = library.populated_data
 
-        self.__populated_data = data
-
-    def generate(self) -> bytes:
-        try:
-            return serializer.cube_file_cube_file.build(self.__populated_data)
-        except KeyError:
-            raise ValueError("Data was not populated!")
+        self._populated_data = data
 
     def __len__(self) -> int:
         try:
             return (
                 serializer.primary_header_primary_header.sizeof() * 2
-                + len(self.__populated_data["file"]["sha256"])
+                + len(self._populated_data["file"]["sha256"])
                 + serializer.library_v1_secondary_header.sizeof()
-                + self.__populated_data["file"]["library"]["secondary_header"][
+                + self._populated_data["file"]["library"]["secondary_header"][
                     "data_length"
                 ]
             )
