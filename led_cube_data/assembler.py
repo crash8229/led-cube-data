@@ -8,43 +8,79 @@ from led_cube_data import serializer
 
 
 class BaseAssembler:
+    """
+    Base case for the assemblers\n
+    Not intended to be used directly
+
+    :param serializer_struct: Struct: Serializer to use when generating the binary data
+
+    """
     def __init__(self, serializer_struct: Struct) -> None:
         self._populated_data: Dict[str, Any] = dict()
         self._serializer: Struct = serializer_struct
 
     @property
     def populated_data(self) -> Dict[str, Any]:
+        """Returns a deepcopy of the populated data dictionary"""
         return deepcopy(self._populated_data)
 
     def generate(self) -> bytes:
+        """
+        Generate the binary representation of the populated data using the serializer
+        Raises a ValueError if there is a missing key in the populated data dictionary
+        """
         try:
             return self._serializer.build(self._populated_data)
         except KeyError:
-            raise ValueError("Data was not populated!")
+            raise ValueError("Data dictionary was not populated!")
 
     def __len__(self) -> int:
         raise NotImplementedError
 
     @staticmethod
     def template() -> Dict[str, Any]:
+        """Provides a template dictionary of the information needed when populating the data dictionary for generation"""
         raise NotImplementedError
 
     def populate(self, *args, **kwargs) -> None:
+        """
+        Populate the internal data dictionary\n
+        This is called when instantiating the class\n
+        This method can to called again to update the dictionary
+        """
         raise NotImplementedError
 
 
 #### Frames ####################################################################
 class Frame(BaseAssembler):  # noqa
+    """
+    Base frame class to be used for the frame assemblers\n
+    Not intended to be used directly
+    """
     def __init__(self) -> None:
         super().__init__(serializer.frame_frame)
 
 
 class FrameV1(Frame):
+    """
+    Assembler for version 1 of the frame object
+
+    :param duration: int:
+    :param tlc_states: Sequence[Sequence[int]]:
+    """
     def __init__(self, duration: int, tlc_states: Sequence[Sequence[int]]) -> None:
         super().__init__()
         self.populate(duration, tlc_states)
 
     def populate(self, duration: int, tlc_states: Sequence[Sequence[int]]) -> None:
+        """
+        Populate the internal data dictionary\n
+        This is called when instantiating the class\n
+        This method can to called again to update the dictionary
+
+        :param duration: int:
+        :param tlc_states: Sequence[Sequence[int]]:
+        """
         data = self.template()
         data["frame"]["secondary_header"]["duration"] = duration
         data["frame"]["secondary_header"]["data_length"] = (
@@ -66,6 +102,7 @@ class FrameV1(Frame):
 
     @staticmethod
     def template() -> Dict[str, Any]:
+        """Provides a template dictionary of the information needed when populating the data dictionary for generation"""
         return {
             "primary_header": {"type": "frame", "version": 1},
             "frame": {
@@ -77,11 +114,22 @@ class FrameV1(Frame):
 
 #### Animations ################################################################
 class Animation(BaseAssembler):  # noqa
+    """
+    Base animation class to be used for the animation assemblers\n
+    Not intended to be used directly
+    """
     def __init__(self) -> None:
         super().__init__(serializer.animation_animation)
 
 
 class AnimationV1(Animation):
+    """
+    Assembler for version 1 of the animation object
+
+    :param name: str:
+    :param timestamp: int:
+    :param frames: Sequence[Frame]:
+    """
     def __init__(
         self,
         name: str,
@@ -97,6 +145,15 @@ class AnimationV1(Animation):
         timestamp: int,
         frames: Sequence[Frame],
     ) -> None:
+        """
+        Populate the internal data dictionary\n
+        This is called when instantiating the class\n
+        This method can to called again to update the dictionary
+
+        :param name: str:
+        :param timestamp: int:
+        :param frames: Sequence[Frame]:
+        """
         data = AnimationV1.template()
         data["animation"]["secondary_header"]["name"] = name
         data["animation"]["secondary_header"]["time"] = timestamp
@@ -130,6 +187,7 @@ class AnimationV1(Animation):
 
     @staticmethod
     def template() -> Dict[str, Any]:
+        """Provides a template dictionary of the information needed when populating the data dictionary for generation"""
         return {
             "primary_header": {"type": "animation", "version": 1},
             "sha256": None,
@@ -147,11 +205,26 @@ class AnimationV1(Animation):
 
 #### Libraries #################################################################
 class Library(BaseAssembler):  # noqa
+    """
+    Base library class to be used for the library assemblers\n
+    Not intended to be used directly
+    """
     def __init__(self) -> None:
         super().__init__(serializer.library_library)
 
 
 class LibraryV1(Library):
+    """
+    Assembler for version 1 of the library object
+
+    :param name: str:
+    :param timestamp: int:
+    :param x_size: int:
+    :param y_size: int:
+    :param z_size: int:
+    :param tlc_count: int:
+    :param animations: Sequence[Animation]:
+    """
     def __init__(
         self,
         name: str,
@@ -175,6 +248,20 @@ class LibraryV1(Library):
         tlc_count: int,
         animations: Sequence[Animation],
     ) -> None:
+        """
+        Populate the internal data dictionary\n
+        This is called when instantiating the class\n
+        This method can to called again to update the dictionary
+
+        :param name: str:
+        :param timestamp: int:
+        :param x_size: int:
+        :param y_size: int:
+        :param z_size: int:
+        :param tlc_count: int:
+        :param animations: Sequence[Animation]:
+
+        """
         data = LibraryV1.template()
         data["library"]["secondary_header"]["name"] = name
         data["library"]["secondary_header"]["time"] = timestamp
@@ -212,6 +299,7 @@ class LibraryV1(Library):
 
     @staticmethod
     def template() -> Dict[str, Any]:
+        """Provides a template dictionary of the information needed when populating the data dictionary for generation"""
         return {
             "primary_header": {"type": "library", "version": 1},
             "sha256": None,
@@ -233,16 +321,32 @@ class LibraryV1(Library):
 
 #### Cube Files ################################################################
 class CubeFile(BaseAssembler):  # noqa
+    """
+    Base file class to be used for the file assemblers\n
+    Not intended to be used directly
+    """
     def __init__(self) -> None:
         super().__init__(serializer.cube_file_cube_file)
 
 
 class CubeFileV1(CubeFile):
+    """
+    Assembler for version 1 of the file object
+
+    :param library: Library:
+    """
     def __init__(self, library: Library) -> None:
         super().__init__()
         self.populate(library)
 
     def populate(self, library: Library) -> None:
+        """
+        Populate the internal data dictionary\n
+        This is called when instantiating the class\n
+        This method can to called again to update the dictionary
+
+        :param library: Library:
+        """
         data = CubeFileV1.template()
         data["file"] = library.populated_data
 
@@ -263,6 +367,7 @@ class CubeFileV1(CubeFile):
 
     @staticmethod
     def template() -> Dict[str, Any]:
+        """Provides a template dictionary of the information needed when populating the data dictionary for generation"""
         return {
             "primary_header": {"type": "file", "version": 1},
             "file": None,
